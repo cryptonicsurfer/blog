@@ -8,6 +8,10 @@ wheels/
 
 # Virtual environments
 .venv
-config.yml
-__pycache__
-*.pyc
+
+# config files
+config.yaml
+
+# environment files
+.environment
+.env

@@ -1,0 +1,5 @@
+blog_dir: "~/blog"  # Points to root directory
+github_token: "your-token"
+openrouter_api_key: "your-key"
+site_url: "https://user-name.github.io/<repo-name>"
+app_name: "My Automated Blog"

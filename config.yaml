@@ -1,5 +1,0 @@
-blog_dir: "~/blog"  # Points to root directory
-github_token: "your-github-token"
-openrouter_api_key: "your-openrouter-api-key"
-site_url: "https://cryptonicsurfer.github.io/blog"
-app_name: "My Automated Blog"

@@ -159,7 +159,7 @@ The post should include a title and maintain similar paragraph length and struct
 
 # Example usage
 if __name__ == "__main__":
-    with open("config.yml") as f:
+    with open("config.yaml") as f:
         config = yaml.safe_load(f)
     
     automation = BlogAutomation(
@@ -170,6 +170,6 @@ if __name__ == "__main__":
         app_name=config['app_name']
     )
     
-    topic = "The Future of AI in Content Creation"
+    topic = "The Future of AI in Content Creation - in Swedish ONLY"
     new_post_path = automation.run_automation(topic)
     print(f"Published new post: {new_post_path}")

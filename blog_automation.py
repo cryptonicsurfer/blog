@@ -8,19 +8,66 @@ import yaml
 from pathlib import Path
 
 class BlogAutomation:
-    def __init__(self, blog_dir, github_token, openrouter_api_key, site_url, app_name):
+    def __init__(self, blog_dir, github_token, gemini_api_key, site_url, app_name):
         self.blog_dir = Path(blog_dir)
         self.blogs_dir = self.blog_dir / 'blogs'
         self.github_token = github_token
         self.client = OpenAI(
-            base_url="https://openrouter.ai/api/v1",
-            api_key=openrouter_api_key
+            base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+            api_key=gemini_api_key
         )
         self.site_url = site_url
         self.app_name = app_name
         
         # Ensure blogs directory exists
         self.blogs_dir.mkdir(parents=True, exist_ok=True)
+
+    def setup_github_pages(self):
+        """Setup necessary files for GitHub Pages"""
+        # Create _config.yml for Jekyll
+        config_content = f"""
+title: {self.app_name}
+description: An automated blog using AI
+theme: minima
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+
+permalink: /:year/:month/:day/:title/
+"""
+        config_file = self.blog_dir / '_config.yml'
+        config_file.write_text(config_content)
+        
+        # Create index.md
+        index_content = f"""---
+layout: home
+title: Welcome to {self.app_name}
+---
+
+Welcome to my automated blog! Here you'll find all my posts about various topics.
+"""
+        index_file = self.blog_dir / 'index.md'
+        index_file.write_text(index_content)
+        
+    def get_github_pages_url(self):
+        """Get the GitHub Pages URL based on the repository"""
+        try:
+            repo = Repo(self.blog_dir)
+            remote_url = repo.remotes.origin.url
+            
+            if 'github.com' in remote_url:
+                if remote_url.startswith('git@'):
+                    # SSH URL format
+                    path = remote_url.split(':')[1].replace('.git', '')
+                else:
+                    # HTTPS URL format
+                    path = remote_url.split('github.com/')[1].replace('.git', '')
+                
+                username, repo_name = path.split('/')
+                return f"https://{username}.github.io/{repo_name}"
+        except Exception as e:
+            print(f"Could not determine GitHub Pages URL: {e}")
+            return None
         
     def get_default_style_guide(self):
         """Provide default style guidelines when no existing posts are available"""
@@ -38,7 +85,7 @@ The implications of this technology extend far beyond cryptocurrency. From suppl
 
 In future posts, we'll dive deeper into specific applications and explore emerging trends in this fascinating field.
 """
-        
+
     def analyze_existing_posts(self, num_posts=5):
         """Analyze recent posts to understand the writing style"""
         posts = []
@@ -51,7 +98,7 @@ In future posts, we'll dive deeper into specific applications and explore emergi
                 'date': datetime.now().strftime('%Y-%m-%d')
             }
             return [default_post]
-            
+        
         for post_file in post_files[:num_posts]:
             with open(post_file) as f:
                 post = frontmatter.load(f)
@@ -78,7 +125,7 @@ The style should be:
 - Professional but conversational
 - Well-structured with clear paragraphs
 - Include an introduction and conclusion
-- Approximately 500 words
+- Approximately 500 words in length
 
 Please write a blog post about {topic} following these guidelines."""
         else:
@@ -89,19 +136,29 @@ Please write a blog post about {topic} following these guidelines."""
 Please write a new blog post about {topic} that maintains a similar tone, style, and format.
 The post should include a title and maintain similar paragraph length and structure."""
 
-        completion = self.client.chat.completions.create(
-            extra_headers={
-                "HTTP-Referer": self.site_url,
-                "X-Title": self.app_name,
-            },
-            model="google/gemini-2.0-flash-exp:free",
-            messages=[{
-                "role": "user",
-                "content": prompt
-            }]
-        )
+        print("\nSending request to API with prompt:", prompt[:200], "...")
         
-        return completion.choices[0].message.content
+        try:
+            completion = self.client.chat.completions.create(
+                model="gemini-2.0-flash-exp",
+                messages=[{
+                    "role": "user",
+                    "content": prompt
+                }]
+            )
+            
+            print("\nAPI Response received:")
+            print("Response type:", type(completion))
+            print("Response content:", completion)
+            
+            if completion and completion.choices:
+                return completion.choices[0].message.content
+            else:
+                raise ValueError("No content received from API")
+                
+        except Exception as e:
+            print(f"Error in generate_post: {type(e).__name__} - {str(e)}")
+            raise
 
     def create_post_file(self, content, topic):
         """Create a new markdown file with proper frontmatter"""
@@ -110,7 +167,7 @@ The post should include a title and maintain similar paragraph length and struct
         
         # Parse the generated content to separate title and body
         lines = content.strip().split('\n')
-        title = lines[0].replace('# ', '')
+        title = lines[0].replace('# ', '').replace('Title: ', '')
         body = '\n'.join(lines[1:])
         
         # Create frontmatter
@@ -150,12 +207,24 @@ The post should include a title and maintain similar paragraph length and struct
 
     def run_automation(self, topic):
         """Run the full automation process"""
+        # Setup GitHub Pages if not already set up
+        if not (self.blog_dir / '_config.yml').exists():
+            self.setup_github_pages()
+            
         existing_posts = self.analyze_existing_posts()
         new_content = self.generate_post(topic, existing_posts)
         file_path = self.create_post_file(new_content, topic)
         commit_message = f"Add new blog post: {topic}"
         self.publish_to_github(file_path, commit_message)
+        
+        # Get and display the GitHub Pages URL
+        pages_url = self.get_github_pages_url()
+        if pages_url:
+            print(f"\nYour blog is available at: {pages_url}")
+            print("Note: It may take a few minutes for GitHub Pages to build and deploy your site.")
+        
         return file_path
+
 
 # Example usage
 if __name__ == "__main__":
@@ -165,7 +234,7 @@ if __name__ == "__main__":
     automation = BlogAutomation(
         blog_dir=config['blog_dir'],
         github_token=config['github_token'],
-        openrouter_api_key=config['openrouter_api_key'],
+        gemini_api_key=config['gemini_api_key'],
         site_url=config['site_url'],
         app_name=config['app_name']
     )

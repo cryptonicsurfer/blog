@@ -1,0 +1,9 @@
+
+title: My Automated Blog
+description: An automated blog using AI
+theme: minima
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+
+permalink: /:year/:month/:day/:title/

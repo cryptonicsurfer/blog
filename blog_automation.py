@@ -9,8 +9,9 @@ from pathlib import Path
 
 class BlogAutomation:
     def __init__(self, blog_dir, github_token, gemini_api_key, site_url, app_name):
-        self.blog_dir = Path(blog_dir)
-        self.blogs_dir = self.blog_dir / 'blogs'
+        # Expand ~ to the actual home directory and make path absolute
+        self.blog_dir = Path(blog_dir).expanduser().resolve()
+        self.blogs_dir = self.blog_dir / '_posts'  # Changed from 'blogs' to '_posts' for Jekyll
         self.github_token = github_token
         self.client = OpenAI(
             base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
@@ -19,7 +20,7 @@ class BlogAutomation:
         self.site_url = site_url
         self.app_name = app_name
         
-        # Ensure blogs directory exists
+        # Ensure posts directory exists
         self.blogs_dir.mkdir(parents=True, exist_ok=True)
 
     def setup_github_pages(self):

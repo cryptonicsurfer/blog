@@ -1,6 +1,6 @@
-# My Automated Blog
+---
+layout: home
+title: Welcome to My Automated Blog
+---
 
-Welcome to my AI-powered blog! Check out my latest posts:
-
-- [All posts](/blogs/)
-
+Welcome to my automated blog! Here you'll find all my posts about various topics.
